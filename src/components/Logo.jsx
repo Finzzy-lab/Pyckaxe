@@ -1,0 +1,21 @@
+import React from "react";
+
+export default function Logo({ size = 28 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect x="4" y="4" width="120" height="120" rx="30" fill="#1C1F24" stroke="#3A3F49" strokeWidth="2" />
+      <g transform="rotate(45 64 64)">
+        <rect x="58.5" y="40" width="11" height="62" rx="5.5" fill="#C97B3D" />
+        <path
+          d="M64 18 C 78 18, 92 26, 98 38 C 90 42, 82 43.5, 74 42 L 64 50 L 54 42 C 46 43.5, 38 42, 30 38 C 36 26, 50 18, 64 18 Z"
+          fill="#E9E5DC"
+        />
+        <path
+          d="M64 18 C 78 18, 92 26, 98 38 C 90 42, 82 43.5, 74 42 L 64 50 Z"
+          fill="#C9C3B6"
+        />
+      </g>
+      <circle cx="64" cy="64" r="4.5" fill="#16181C" />
+    </svg>
+  );
+}
