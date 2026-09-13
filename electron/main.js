@@ -123,28 +123,60 @@ ipcMain.handle("servers:scanFolder", async (_e, folderPath) => {
   };
 });
 
+// Güvenli yol doğrulama (Path Traversal koruması)
+function ensureSafePath(targetPath) {
+  if (!targetPath || typeof targetPath !== "string") {
+    throw new Error("Geçersiz dosya yolu.");
+  }
+  const resolved = path.resolve(targetPath);
+  const servers = store.getServers();
+  const allowedRoots = [
+    app.getPath("userData"),
+    app.getPath("temp"),
+    ...servers.map((s) => s.folderPath).filter(Boolean)
+  ];
+
+  const isAllowed = allowedRoots.some((root) => {
+    const rel = path.relative(path.resolve(root), resolved);
+    return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+  });
+
+  if (!isAllowed) {
+    throw new Error("Yetkisiz dosya erişim girişimi engellendi.");
+  }
+  return resolved;
+}
+
 ipcMain.handle("fs:list", async (_e, dirPath) => {
-  const entries = await fs.readdir(dirPath, { withFileTypes: true });
+  const safePath = ensureSafePath(dirPath);
+  const entries = await fs.readdir(safePath, { withFileTypes: true });
   return entries
     .map((e) => ({
       name: e.name,
       isDirectory: e.isDirectory(),
-      path: path.join(dirPath, e.name)
+      path: path.join(safePath, e.name)
     }))
     .sort((a, b) => Number(b.isDirectory) - Number(a.isDirectory) || a.name.localeCompare(b.name));
 });
 
 ipcMain.handle("fs:readFile", async (_e, filePath) => {
-  const stat = await fs.stat(filePath);
+  const safePath = ensureSafePath(filePath);
+  const stat = await fs.stat(safePath);
   if (stat.size > 2 * 1024 * 1024) {
     throw new Error("Dosya 2MB üzerinde, düzenleyicide açılamıyor.");
   }
-  return fs.readFile(filePath, "utf-8");
+  return fs.readFile(safePath, "utf-8");
 });
 
-ipcMain.handle("fs:writeFile", (_e, filePath, content) => fs.writeFile(filePath, content, "utf-8"));
+ipcMain.handle("fs:writeFile", (_e, filePath, content) => {
+  const safePath = ensureSafePath(filePath);
+  return fs.writeFile(safePath, content, "utf-8");
+});
 
-ipcMain.handle("fs:openInExplorer", (_e, targetPath) => shell.showItemInFolder(targetPath));
+ipcMain.handle("fs:openInExplorer", (_e, targetPath) => {
+  const safePath = ensureSafePath(targetPath);
+  return shell.showItemInFolder(safePath);
+});
 
 // ---------- PaperMC ----------
 
